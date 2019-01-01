@@ -8,9 +8,9 @@ pub struct Bounded {
     pub x: i32,
     pub y: i32,
     pub z: i32,
-    pub width: u32,
-    pub height: u32,
-    pub depth: u32,
+    pub width: usize,
+    pub height: usize,
+    pub depth: usize,
 }
 
 impl Bounded {
