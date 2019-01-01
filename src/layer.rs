@@ -1,7 +1,8 @@
 use std::fs::File;
 
-use super::{
+use crate::{
     Block,
+    Bounded,
     get_value,
     get_value_int,
     get_value_string,
@@ -9,7 +10,7 @@ use super::{
     read_int,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum Shape {
     Cube = 1,
     Cylinder = 2,
@@ -26,6 +27,7 @@ pub struct Layer {
     pub name: String,
     pub shape: Shape,
     pub transform: Vec<u8>,
+    pub bounds: Option<Bounded>
 }
 
 impl Layer {
@@ -54,6 +56,7 @@ impl Layer {
         let name = get_value_string(&dict, "name");
         let shape = get_value_int(&dict, "shape");
         let transform = get_value(&dict, "transform");
+        let bounds = Bounded::from_bytes(get_value(&dict, "box"));
 
         Layer {
             base_id,
@@ -70,6 +73,7 @@ impl Layer {
                 }
             },
             transform,
+            bounds,
         }
     }
 }
