@@ -1,6 +1,25 @@
+#![forbid(overflowing_literals)]
+#![deny(missing_copy_implementations)]
+#![deny(missing_debug_implementations)]
+//#![deny(missing_docs)]
+#![deny(intra_doc_link_resolution_failure)]
+#![deny(path_statements)]
+#![deny(trivial_bounds)]
+#![deny(type_alias_bounds)]
+#![deny(unconditional_recursion)]
+#![deny(unions_with_drop_fields)]
+#![deny(while_true)]
+#![deny(unused)]
+#![deny(bad_style)]
+#![deny(future_incompatible)]
+#![deny(rust_2018_compatibility)]
+#![deny(rust_2018_idioms)]
+#![allow(unused_unsafe)]
+
 use std::fs::File;
 
 mod block;
+mod bounded;
 mod camera;
 mod chunk;
 mod layer;
@@ -8,14 +27,16 @@ mod utils;
 
 pub use self::{
     block::Block,
+    bounded::Bounded,
     camera::Camera,
     chunk::Chunk,
-    chunk::ChunkData,
     layer::Layer,
     layer::Shape,
+    utils::get_box_size,
     utils::get_value,
     utils::get_value_int,
     utils::get_value_string,
+    utils::parse_float,
     utils::read,
     utils::read_dict,
     utils::read_u8,
@@ -73,13 +94,12 @@ pub use self::{
  *
  */
 
-#[derive(Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum Only {
     Block,
     Camera,
     Image,
-    Layer,
-    Preview,
+//    Preview,
 }
 
 #[derive(Debug)]
@@ -90,43 +110,37 @@ pub struct Gox {
 
 impl Gox {
     pub fn new(stream: &File, only: Vec<Only>) -> Self {
-//        let stream = &(File::open(file).unwrap());
         let _magic = read(stream, 4);
         let version = read_int(stream);
-        let mut chunks = vec![];
+        let data = Chunk::parse(stream);
+        let mut chunks= vec![];
 
-        loop {
-            if let Some(chunk) = Chunk::new(stream) {
-                match chunk.data {
-                    ChunkData::Block(_) => {
+        if only.len() == 0 {
+            chunks = data;
+        } else {
+            for chunk in data {
+                match chunk {
+                    Chunk::Block(_) => {
                         if only.contains(&Only::Block) {
-                            chunks.push(chunk)
+                            chunks.push(chunk);
                         }
-                    },
-                    ChunkData::Camera(_) => {
+                    }
+                    Chunk::Camera(_) => {
                         if only.contains(&Only::Camera) {
-                            chunks.push(chunk)
+                            chunks.push(chunk);
                         }
-                    },
-                    ChunkData::Image(_) => {
+                    }
+                    Chunk::Image(_, _) => {
                         if only.contains(&Only::Image) {
-                            chunks.push(chunk)
+                            chunks.push(chunk);
                         }
-                    },
-                    ChunkData::Layer(_) => {
-                        if only.contains(&Only::Layer) {
-                            chunks.push(chunk)
-                        }
-                    },
-                    ChunkData::Preview => {
-                        if only.contains(&Only::Preview) {
-                            chunks.push(chunk)
-                        }
-                    },
-                    _ => {},
+                    }
+//                Chunk::Preview(_) => {
+//                    if only.contains(&Only::Preview) {
+//                        chunks.push(chunk);
+//                    }
+//                }
                 }
-            } else {
-                break;
             }
         }
 
