@@ -7,7 +7,7 @@ use std::{
 
 use byteorder::{ByteOrder, LittleEndian};
 
-// TODO: Nedd to check if the math is correct
+// TODO: Need to check if the math is correct
 pub fn get_box_size(matrix: &[[f32; 4]; 4]) -> (u32, u32, u32) {
     let mut result = [0.0; 3];
     let mut values = [
@@ -21,7 +21,8 @@ pub fn get_box_size(matrix: &[[f32; 4]; 4]) -> (u32, u32, u32) {
         result[i] = vec3_norm(&vector);
     }
 
-    (result[0] as u32, result[1] as u32, result[2] as u32)
+    // FIXME: For some reason the size is half of the supposed value, so for now I just multiply by 2 to get the proper size
+    ((result[0] * 2.0) as u32, (result[1] * 2.0) as u32, (result[2] * 2.0) as u32)
 }
 
 fn mat4_mul_vec4(matrix: &[[f32; 4]; 4], vector: &[f32; 4]) -> [f32; 4] {
@@ -143,9 +144,6 @@ fn vec3_dot(lhs: &[f32; 4], rhs: &[f32; 4]) -> f32 {
 }
 
 fn vec3_norm(vector: &[f32; 4])  -> f32 {
-    vec3_norm2(vector).sqrt()
-}
-
-fn vec3_norm2(vector: &[f32; 4]) -> f32 {
-    vec3_dot(vector, vector)
+    let dot = vec3_dot(vector, vector);
+    dot.sqrt()
 }
