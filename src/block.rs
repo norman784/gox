@@ -1,8 +1,8 @@
 use std::fs::File;
 
-use super::read_int;
+use crate::read_int;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Block {
     pub index: i32,
     pub x: i32,
