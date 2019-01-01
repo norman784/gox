@@ -5,6 +5,41 @@ use std::{
     str,
 };
 
+use byteorder::{ByteOrder, LittleEndian};
+
+// TODO: Nedd to check if the math is correct
+pub fn get_box_size(matrix: &[[f32; 4]; 4]) -> (u32, u32, u32) {
+    let mut result = [0.0; 3];
+    let mut values = [
+        [1.0, 0.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0, 0.0],
+        [0.0, 0.0, 1.0, 0.0],
+    ];
+
+    for (i, value) in values.iter_mut().enumerate() {
+        let vector = mat4_mul_vec4(&matrix, value);
+        result[i] = vec3_norm(&vector);
+    }
+
+    (result[0] as u32, result[1] as u32, result[2] as u32)
+}
+
+fn mat4_mul_vec4(matrix: &[[f32; 4]; 4], vector: &[f32; 4]) -> [f32; 4] {
+    let mut result = [0.0; 4];
+
+    for i in 0..4 {
+        for j in 0..4 {
+            result[i] += matrix[i][j] * vector[j];
+        }
+    }
+
+    result
+}
+
+pub fn parse_float(byte_array: &[u8; 4]) -> f32 {
+    LittleEndian::read_f32(byte_array)
+}
+
 pub fn read(stream: &File, bytes: i32) -> Vec<u8> {
     let mut result = vec![];
 
@@ -101,4 +136,16 @@ pub fn get_value_int(dict: &HashMap<String, Vec<u8>>, key: &str) -> i32 {
     } else {
         0
     }
+}
+
+fn vec3_dot(lhs: &[f32; 4], rhs: &[f32; 4]) -> f32 {
+    lhs[0] * rhs[0] + lhs[1] * rhs[1] + lhs[2] * rhs[2]
+}
+
+fn vec3_norm(vector: &[f32; 4])  -> f32 {
+    vec3_norm2(vector).sqrt()
+}
+
+fn vec3_norm2(vector: &[f32; 4]) -> f32 {
+    vec3_dot(vector, vector)
 }
