@@ -1,4 +1,4 @@
-use std::fs::File;
+use std::io::Read;
 
 use crate::{
     Block,
@@ -31,7 +31,7 @@ pub struct Layer {
 }
 
 impl Layer {
-    pub fn new(stream: &File) -> Self {
+    pub fn new(stream: &mut dyn Read) -> Self {
         let mut blocks = vec![];
         let length = read_int(stream);
         let block_count = read_int(stream);

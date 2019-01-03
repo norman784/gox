@@ -1,4 +1,4 @@
-use std::fs::File;
+use std::io::Read;
 
 use crate::{
     read_dict,
@@ -15,7 +15,7 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(stream: &File) -> Self {
+    pub fn new(stream: &mut dyn Read) -> Self {
         let length = read_int(stream);
         let _dict = read_dict(stream, length);
 

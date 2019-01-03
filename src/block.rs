@@ -1,4 +1,4 @@
-use std::fs::File;
+use std::io::Read;
 
 use crate::read_int;
 
@@ -11,7 +11,7 @@ pub struct Block {
 }
 
 impl Block {
-    pub fn new(stream: &File) -> Self {
+    pub fn new(stream: &mut dyn Read) -> Self {
         let index = read_int(stream);
         let x = read_int(stream);
         let y = read_int(stream);

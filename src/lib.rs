@@ -16,7 +16,7 @@
 #![deny(rust_2018_idioms)]
 #![allow(unused_unsafe)]
 
-use std::fs::File;
+use std::io::Read;
 
 mod block;
 mod bounded;
@@ -109,7 +109,7 @@ pub struct Gox {
 }
 
 impl Gox {
-    pub fn new(stream: &File, only: Vec<Only>) -> Self {
+    pub fn new(stream: &mut dyn Read, only: Vec<Only>) -> Self {
         let _magic = read(stream, 4);
         let version = read_int(stream);
         let data = Chunk::parse(stream);

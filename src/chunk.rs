@@ -1,5 +1,5 @@
 use std::{
-    fs::File,
+    io::Read,
     str,
 };
 
@@ -21,7 +21,7 @@ pub enum Chunk {
 }
 
 impl Chunk {
-    pub fn parse(stream: &File) -> Vec<Chunk> {
+    pub fn parse(stream: &mut dyn Read) -> Vec<Chunk> {
         let mut result = vec![];
         let mut layers = vec![];
 
