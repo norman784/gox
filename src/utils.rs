@@ -1,6 +1,6 @@
 use std::{
     collections::HashMap,
-    io::prelude::*,
+    io::Read,
     str,
 };
 
@@ -80,31 +80,6 @@ pub fn read(stream: &mut dyn Read, bytes: i32) -> Vec<u8> {
     result
 }
 
-pub fn read_u8(stream: &mut dyn Read) -> u8 {
-    let mut buffer = [0; 1];
-    let _result = stream.read(&mut buffer);
-
-    (buffer[0] << 0)
-}
-
-pub fn read_int(stream: &mut dyn Read) -> i32 {
-    let mut buffer = [0; 4];
-    let _result = stream.read(&mut buffer);
-
-    ((buffer[0] as i32) <<  0) +
-        ((buffer[1] as i32) <<  8) +
-        ((buffer[2] as i32) << 16) +
-        ((buffer[3] as i32) << 24)
-}
-
-pub fn read_str(stream: &mut dyn Read, bytes: i32) -> String {
-    let result = read(stream, bytes);
-    match str::from_utf8(&result) {
-        Ok(string) => string.to_string(),
-        _ => "".to_string()
-    }
-}
-
 pub fn read_dict(stream: &mut dyn Read, max_bytes: i32) -> HashMap<String, Vec<u8>> {
     let mut result = HashMap::new();
     let mut bytes_read = 0;
@@ -136,6 +111,31 @@ pub fn read_dict_key_value(stream: &mut dyn Read) -> Option<(String, Vec<u8>, i3
     } else {
         None
     }
+}
+
+pub fn read_int(stream: &mut dyn Read) -> i32 {
+    let mut buffer = [0; 4];
+    let _result = stream.read(&mut buffer);
+
+    ((buffer[0] as i32) <<  0) +
+        ((buffer[1] as i32) <<  8) +
+        ((buffer[2] as i32) << 16) +
+        ((buffer[3] as i32) << 24)
+}
+
+pub fn read_str(stream: &mut dyn Read, bytes: i32) -> String {
+    let result = read(stream, bytes);
+    match str::from_utf8(&result) {
+        Ok(string) => string.to_string(),
+        _ => "".to_string()
+    }
+}
+
+pub fn read_u8(stream: &mut dyn Read) -> u8 {
+    let mut buffer = [0; 1];
+    let _result = stream.read(&mut buffer);
+
+    (buffer[0] << 0)
 }
 
 fn vec3_dot(lhs: &[f32; 4], rhs: &[f32; 4]) -> f32 {

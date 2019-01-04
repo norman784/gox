@@ -19,10 +19,13 @@
 use std::io::Read;
 
 mod block;
+mod chunk;
 mod bounded;
 mod camera;
-mod chunk;
+mod data;
+mod image;
 mod layer;
+mod memory;
 mod utils;
 
 pub use self::{
@@ -30,7 +33,10 @@ pub use self::{
     bounded::Bounded,
     camera::Camera,
     chunk::Chunk,
+    data::Data,
+    image::Image,
     layer::Layer,
+    memory::Memory,
     layer::Shape,
     utils::get_box_size,
     utils::get_value,
@@ -96,23 +102,23 @@ pub use self::{
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum Only {
-    Block,
+    Blocks,
     Camera,
-    Image,
+    Layers,
 //    Preview,
 }
 
 #[derive(Debug)]
 pub struct Gox {
     pub version: i32,
-    pub data: Vec<Chunk>,
+    pub data: Vec<Data>,
 }
 
 impl Gox {
     pub fn new(stream: &mut dyn Read, only: Vec<Only>) -> Self {
         let _magic = read(stream, 4);
         let version = read_int(stream);
-        let data = Chunk::parse(stream);
+        let data = Data::parse(stream);
         let mut chunks= vec![];
 
         if only.len() == 0 {
@@ -120,18 +126,18 @@ impl Gox {
         } else {
             for chunk in data {
                 match chunk {
-                    Chunk::Block(_) => {
-                        if only.contains(&Only::Block) {
+                    Data::Blocks(_) => {
+                        if only.contains(&Only::Blocks) {
                             chunks.push(chunk);
                         }
                     }
-                    Chunk::Camera(_) => {
+                    Data::Camera(_) => {
                         if only.contains(&Only::Camera) {
                             chunks.push(chunk);
                         }
                     }
-                    Chunk::Image(_, _) => {
-                        if only.contains(&Only::Image) {
+                    Data::Layers(_, _) => {
+                        if only.contains(&Only::Layers) {
                             chunks.push(chunk);
                         }
                     }

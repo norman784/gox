@@ -1,6 +1,11 @@
 # Gox (WIP)
 [Gox](http://guillaumechereau.github.io/goxel) file reader written in rust.
 
+## TODO
+
+- Image is not really parsed
+- Check if the Gox is really an optimal solution
+
 ## License
 
 Licensed under either of
