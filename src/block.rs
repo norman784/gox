@@ -14,8 +14,12 @@ use crate::{
     read_int,
 };
 
+const BLOCK_SIZE: usize =  16;
+const BLOCK_SIZE_POT: usize =  BLOCK_SIZE * BLOCK_SIZE;
+const BLOCK_SIZE_CUBED: usize =  BLOCK_SIZE * BLOCK_SIZE * BLOCK_SIZE;
+
 pub struct Block {
-    colors: Vec<Vec<Vec<[u8; 4]>>>
+    colors: Vec<[u8; 4]>
 }
 
 impl Block {
@@ -24,8 +28,8 @@ impl Block {
         let buffer = read(stream, length);
         let memory = Memory { buffer: buffer.clone() };
         let decoder = Decoder::new(memory);
-        let mut result = vec![vec![vec![[0; 4]; 16]; 16]; 16];
-        let mut colors = vec![[0; 4];  4096];
+        let mut result = vec![[0; 4]; BLOCK_SIZE_CUBED];
+        let mut colors = vec![[0; 4];  BLOCK_SIZE_CUBED];
 
         match decoder.read_info() {
             Ok((info, mut reader)) => {
@@ -71,14 +75,11 @@ impl Block {
                     i += 1;
                 }
 
-                let size = 16;
-                let size_cubed = size * size;
-
-                for x in 0..size {
-                    for y in 0..size {
-                        for z in 0..size {
-                            let index = x + y * size + size_cubed * z;
-                            result[x][y][z] = colors[index];
+                for x in 0..BLOCK_SIZE {
+                    for y in 0..BLOCK_SIZE {
+                        for z in 0..BLOCK_SIZE {
+                            let index = Self::index(x, y, z);
+                            result[index] = colors[index];
                         }
                     }
                 }
@@ -92,15 +93,19 @@ impl Block {
     }
 
     pub fn set_pixel(&mut self, x: usize, y: usize, z:usize, value: [u8; 4]) {
-        self.colors[x][y][z] = value;
+        self.colors[Self::index(x, y, z)] = value;
     }
 
     pub fn get_pixel(&self, x: usize, y: usize, z:usize) -> [u8; 4] {
-        self.colors[x][y][z]
+        self.colors[Self::index(x, y, z)]
     }
 
     pub fn is_empty(&self, x: usize, y: usize, z:usize) -> bool {
         self.get_pixel(x, y, z)[3] == 0
+    }
+
+    fn index(x: usize, y: usize, z:usize) -> usize {
+        x + y * BLOCK_SIZE + z * BLOCK_SIZE_POT
     }
 }
 
