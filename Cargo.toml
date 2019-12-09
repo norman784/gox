@@ -3,6 +3,12 @@ name = "gox"
 version = "0.2.0"
 authors = ["norman784 <normanpaniagua@gmail.com>"]
 edition = "2018"
+description = "Library for loading Goxel .gox files."
+exclude = ["examples/*"]
+keywords = ["voxel", "gox", "goxel", "game", "game-dev"]
+
+readme = "Readme.md"
+license = "MIT/Apache-2.0"
 
 [dependencies]
 byteorder = "1.2.7"
