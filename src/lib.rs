@@ -7,8 +7,6 @@
 #![deny(trivial_bounds)]
 #![deny(type_alias_bounds)]
 #![deny(unconditional_recursion)]
-#![deny(unions_with_drop_fields)]
-#![deny(while_true)]
 #![deny(unused)]
 #![deny(bad_style)]
 #![deny(future_incompatible)]
@@ -19,9 +17,9 @@
 use std::io::Read;
 
 mod block;
-mod chunk;
 mod bounded;
 mod camera;
+mod chunk;
 mod data;
 mod image;
 mod layer;
@@ -29,25 +27,10 @@ mod memory;
 mod utils;
 
 pub use self::{
-    block::Block,
-    bounded::Bounded,
-    camera::Camera,
-    chunk::Chunk,
-    data::Data,
-    image::Image,
-    layer::Layer,
-    memory::Memory,
-    layer::Shape,
-    utils::get_box_size,
-    utils::get_value,
-    utils::get_value_int,
-    utils::get_value_string,
-    utils::parse_float,
-    utils::read,
-    utils::read_dict,
-    utils::read_u8,
-    utils::read_int,
-    utils::read_str,
+    block::Block, bounded::Bounded, camera::Camera, chunk::Chunk, data::Data, image::Image,
+    layer::Layer, layer::Shape, memory::Memory, utils::get_box_size, utils::get_value,
+    utils::get_value_int, utils::get_value_string, utils::parse_float, utils::read,
+    utils::read_dict, utils::read_int, utils::read_str, utils::read_u8,
 };
 
 /*
@@ -105,7 +88,7 @@ pub enum Only {
     Blocks,
     Camera,
     Layers,
-//    Preview,
+    //    Preview,
 }
 
 #[derive(Debug)]
@@ -119,7 +102,7 @@ impl Gox {
         let _magic = read(stream, 4);
         let version = read_int(stream);
         let data = Data::parse(stream);
-        let mut chunks= vec![];
+        let mut chunks = vec![];
 
         if only.len() == 0 {
             chunks = data;
@@ -140,16 +123,18 @@ impl Gox {
                         if only.contains(&Only::Layers) {
                             chunks.push(chunk);
                         }
-                    }
-//                Chunk::Preview(_) => {
-//                    if only.contains(&Only::Preview) {
-//                        chunks.push(chunk);
-//                    }
-//                }
+                    } //                Chunk::Preview(_) => {
+                      //                    if only.contains(&Only::Preview) {
+                      //                        chunks.push(chunk);
+                      //                    }
+                      //                }
                 }
             }
         }
 
-        Gox { version, data: chunks }
+        Gox {
+            version,
+            data: chunks,
+        }
     }
 }
