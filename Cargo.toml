@@ -6,6 +6,9 @@ edition = "2018"
 description = "Library for loading Goxel .gox files."
 exclude = ["examples/*"]
 keywords = ["voxel", "gox", "goxel", "game", "game-dev"]
+documentation = "https://docs.rs/gox"
+homepage = "https://github.com/norman784/gox"
+repository = "https://github.com/norman784/gox"
 
 readme = "Readme.md"
 license = "MIT/Apache-2.0"
