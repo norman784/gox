@@ -1,18 +1,6 @@
-use std::{
-    io::Read,
-    str,
-};
+use std::{io::Read, str};
 
-use crate::{
-    Block,
-    Bounded,
-    Camera,
-    get_value,
-    Layer,
-    read,
-    read_dict,
-    read_int,
-};
+use crate::{get_value, read, read_dict, read_int, Block, Bounded, Camera, Layer};
 
 #[derive(Debug)]
 pub enum Data {
@@ -44,38 +32,35 @@ impl Data {
                 match type_str {
                     "BL16" => {
                         let data = Block::new(stream);
-                        let _crc: i32 = read_int(stream);
                         result.push(Data::Blocks(data));
-                    },
+                    }
                     "CAMR" => {
                         let camera = Camera::new(stream);
-                        let _crc: i32 = read_int(stream);
                         result.push(Data::Camera(camera));
-                    },
+                    }
                     "IMG " => {
                         let length = read_int(stream);
                         let dict = read_dict(stream, length);
-                        let bounds = Bounded::from_bytes(get_value(&dict,  "box")).unwrap();
-                        let _crc: i32 = read_int(stream);
+                        let bounds = Bounded::from_bytes(get_value(&dict, "box")).unwrap();
                         result.push(Data::Layers(vec![], bounds));
-                    },
+                    }
                     "LAYR" => {
                         let layer = Layer::new(stream);
-                        let _crc: i32 = read_int(stream);
                         layers.push(layer);
-                    },
-//                    "PREV" => {
-//                        let length = read_int(stream);
-//                        let _data = read(stream, length);
-//                        let _crc: i32 = read_int(stream);
-//                        result.push(Chunk::Preview);
-//                    },
+                    }
+                    //"PREV" => {
+                    //    let length = read_int(stream);
+                    //    let _data = read(stream, length);
+                    //    let _crc: i32 = read_int(stream);
+                    //    result.push(Chunk::Preview);
+                    //}
                     _ => {
                         let length = read_int(stream);
                         let _data = read(stream, length);
-                        let _crc: i32 = read_int(stream);
-                    },
+                    }
                 }
+
+                let _crc = read_int(stream);
             }
         }
 
@@ -83,7 +68,7 @@ impl Data {
             match item {
                 Data::Layers(_, bounds) => {
                     for layer in layers.iter_mut() {
-                        if  layer.bounds.is_none() {
+                        if layer.bounds.is_none() {
                             layer.bounds = Some(bounds.clone());
                         }
                     }

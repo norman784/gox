@@ -1,46 +1,38 @@
-use std::{
-    fmt,
-    io::Read,
-};
+use std::{fmt, io::Read};
 
-use png::{
-    Decoder,
-    ColorType,
-};
+use png::{ColorType, Decoder};
 
-use crate::{
-    Memory,
-    read,
-    read_int,
-};
+use crate::{read, read_int, Memory};
 
-const BLOCK_SIZE: usize =  16;
-const BLOCK_SIZE_POT: usize =  BLOCK_SIZE * BLOCK_SIZE;
-const BLOCK_SIZE_CUBED: usize =  BLOCK_SIZE * BLOCK_SIZE * BLOCK_SIZE;
+const BLOCK_SIZE: usize = 16;
+const BLOCK_SIZE_POT: usize = BLOCK_SIZE * BLOCK_SIZE;
+const BLOCK_SIZE_CUBED: usize = BLOCK_SIZE * BLOCK_SIZE * BLOCK_SIZE;
 
 pub struct Block {
-    colors: Vec<[u8; 4]>
+    pub colors: Vec<[u8; 4]>,
 }
 
 impl Block {
     pub fn new(stream: &mut dyn Read) -> Self {
         let length = read_int(stream);
         let buffer = read(stream, length);
-        let memory = Memory { buffer: buffer.clone() };
+        let memory = Memory {
+            buffer: buffer.clone(),
+        };
         let decoder = Decoder::new(memory);
         let mut result = vec![[0; 4]; BLOCK_SIZE_CUBED];
-        let mut colors = vec![[0; 4];  BLOCK_SIZE_CUBED];
+        let mut colors = vec![[0; 4]; BLOCK_SIZE_CUBED];
 
         match decoder.read_info() {
             Ok((info, mut reader)) => {
-//            println!(
-//                "PNG w: {} h: {} bit_depth: {:?} buffer_size: {} color_type: {:?}",
-//                info.width,
-//                info.height,
-//                info.bit_depth,
-//                info.buffer_size(),
-//                info.color_type
-//            );
+                //            println!(
+                //                "PNG w: {} h: {} bit_depth: {:?} buffer_size: {} color_type: {:?}",
+                //                info.width,
+                //                info.height,
+                //                info.bit_depth,
+                //                info.buffer_size(),
+                //                info.color_type
+                //            );
 
                 let mut buf = vec![0; info.buffer_size()];
 
@@ -55,7 +47,7 @@ impl Block {
                             vec.extend([g, g, g].iter().cloned())
                         }
                         vec
-                    },
+                    }
                     ColorType::GrayscaleAlpha => {
                         let mut vec = Vec::with_capacity(buf.len() * 3);
                         for ga in buf.chunks(2) {
@@ -64,8 +56,8 @@ impl Block {
                             vec.extend([g, g, g, a].iter().cloned())
                         }
                         vec
-                    },
-                    _ => unreachable!("uncovered color type")
+                    }
+                    _ => unreachable!("uncovered color type"),
                 };
 
                 // TODO: Need to think a better way to read the values directly instead of generating another intermediate array
@@ -83,28 +75,36 @@ impl Block {
                         }
                     }
                 }
-            },
+            }
             Err(error) => println!("PNG error: {}", error),
         }
 
-        Block {
-            colors: result
-        }
+        Block { colors: result }
     }
 
-    pub fn set_pixel(&mut self, x: usize, y: usize, z:usize, value: [u8; 4]) {
+    pub fn set_pixel(&mut self, x: usize, y: usize, z: usize, value: [u8; 4]) {
         self.colors[Self::index(x, y, z)] = value;
     }
 
-    pub fn get_pixel(&self, x: usize, y: usize, z:usize) -> [u8; 4] {
+    pub fn get_pixel(&self, x: usize, y: usize, z: usize) -> [u8; 4] {
         self.colors[Self::index(x, y, z)]
     }
 
-    pub fn is_empty(&self, x: usize, y: usize, z:usize) -> bool {
+    pub fn get_pixel_f32(&self, x: usize, y: usize, z: usize) -> [f32; 4] {
+        let color = self.get_pixel(x, y, z);
+        [
+            color[0] as f32 / 255.0,
+            color[1] as f32 / 255.0,
+            color[2] as f32 / 255.0,
+            color[3] as f32 / 255.0,
+        ]
+    }
+
+    pub fn is_empty(&self, x: usize, y: usize, z: usize) -> bool {
         self.get_pixel(x, y, z)[3] == 0
     }
 
-    fn index(x: usize, y: usize, z:usize) -> usize {
+    fn index(x: usize, y: usize, z: usize) -> usize {
         x + y * BLOCK_SIZE + z * BLOCK_SIZE_POT
     }
 }

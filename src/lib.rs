@@ -123,11 +123,7 @@ impl Gox {
                         if only.contains(&Only::Layers) {
                             chunks.push(chunk);
                         }
-                    } //                Chunk::Preview(_) => {
-                      //                    if only.contains(&Only::Preview) {
-                      //                        chunks.push(chunk);
-                      //                    }
-                      //                }
+                    }
                 }
             }
         }
