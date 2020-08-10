@@ -135,7 +135,7 @@ pub fn read_u8(stream: &mut dyn Read) -> u8 {
     let mut buffer = [0; 1];
     let _result = stream.read(&mut buffer);
 
-    (buffer[0] << 0)
+    buffer[0] << 0
 }
 
 fn vec3_dot(lhs: &[f32; 4], rhs: &[f32; 4]) -> f32 {
