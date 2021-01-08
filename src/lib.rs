@@ -1,19 +1,3 @@
-#![forbid(overflowing_literals)]
-#![deny(missing_copy_implementations)]
-#![deny(missing_debug_implementations)]
-//#![deny(missing_docs)]
-#![deny(intra_doc_link_resolution_failure)]
-#![deny(path_statements)]
-#![deny(trivial_bounds)]
-#![deny(type_alias_bounds)]
-#![deny(unconditional_recursion)]
-#![deny(unused)]
-#![deny(bad_style)]
-#![deny(future_incompatible)]
-#![deny(rust_2018_compatibility)]
-#![deny(rust_2018_idioms)]
-#![allow(unused_unsafe)]
-
 use std::io::Read;
 
 mod block;
@@ -26,12 +10,18 @@ mod layer;
 mod memory;
 mod utils;
 
-pub use self::{
-    block::Block, bounded::Bounded, camera::Camera, chunk::Chunk, data::Data, image::Image,
-    layer::Layer, layer::Shape, memory::Memory, utils::get_box_size, utils::get_value,
-    utils::get_value_int, utils::get_value_string, utils::parse_float, utils::read,
-    utils::read_dict, utils::read_int, utils::read_str, utils::read_u8,
+pub use crate::{
+  block::Block,
+  bounded::Bounded,
+  camera::Camera,
+  chunk::Chunk,
+  data::Data,
+  image::Image,
+  layer::{Layer, Shape},
+  memory::Memory,
 };
+
+use crate::utils::*;
 
 /*
  * File format, version 2:
@@ -85,52 +75,72 @@ pub use self::{
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum Only {
-    Blocks,
-    Camera,
-    Layers,
-    //    Preview,
+  Blocks,
+  Camera,
+  Layers,
+  //    Preview,
 }
 
 #[derive(Debug)]
 pub struct Gox {
-    pub version: i32,
-    pub data: Vec<Data>,
+  pub version: i32,
+  pub data: Vec<Data>,
 }
 
 impl Gox {
-    pub fn new(stream: &mut dyn Read, only: Vec<Only>) -> Self {
-        let _magic = read(stream, 4);
-        let version = read_int(stream);
-        let data = Data::parse(stream);
-        let mut chunks = vec![];
+  pub fn new(stream: &mut dyn Read, only: Vec<Only>) -> Self {
+    let bytes = stream
+      .bytes()
+      .map(|r| match r {
+        Ok(r) => Some(r),
+        _ => None,
+      })
+      .filter(|r| r.is_some())
+      .map(|r| r.unwrap())
+      .collect::<Vec<u8>>();
+    Self::from_bytes(bytes, only)
+  }
 
-        if only.len() == 0 {
-            chunks = data;
-        } else {
-            for chunk in data {
-                match chunk {
-                    Data::Blocks(_) => {
-                        if only.contains(&Only::Blocks) {
-                            chunks.push(chunk);
-                        }
-                    }
-                    Data::Camera(_) => {
-                        if only.contains(&Only::Camera) {
-                            chunks.push(chunk);
-                        }
-                    }
-                    Data::Layers(_, _) => {
-                        if only.contains(&Only::Layers) {
-                            chunks.push(chunk);
-                        }
-                    }
-                }
+  pub fn from_bytes(bytes: Vec<u8>, only: Vec<Only>) -> Self {
+    let mut bytes = bytes;
+    let _magic = bytes.drain(..4).as_slice();
+    let version = read_int(&mut bytes);
+    let data = Data::parse(&mut bytes);
+    let mut chunks = vec![];
+
+    if only.is_empty() {
+      chunks = data;
+    } else {
+      for chunk in data {
+        match chunk {
+          Data::Blocks(_) => {
+            if only.contains(&Only::Blocks) {
+              chunks.push(chunk);
             }
+          }
+          Data::Camera(_) => {
+            if only.contains(&Only::Camera) {
+              chunks.push(chunk);
+            }
+          }
+          Data::Layers(_, _) => {
+            if only.contains(&Only::Layers) {
+              chunks.push(chunk);
+            }
+          }
         }
-
-        Gox {
-            version,
-            data: chunks,
-        }
+      }
     }
+
+    Gox {
+      version,
+      data: chunks,
+    }
+  }
+}
+
+impl From<Vec<u8>> for Gox {
+  fn from(bytes: Vec<u8>) -> Self {
+    Self::from_bytes(bytes, vec![Only::Layers, Only::Blocks])
+  }
 }

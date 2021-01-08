@@ -1,4 +1,4 @@
-use std::{fmt, io::Read};
+use std::fmt;
 
 use png::{ColorType, Decoder};
 
@@ -9,108 +9,90 @@ const BLOCK_SIZE_POT: usize = BLOCK_SIZE * BLOCK_SIZE;
 const BLOCK_SIZE_CUBED: usize = BLOCK_SIZE * BLOCK_SIZE * BLOCK_SIZE;
 
 pub struct Block {
-    pub colors: Vec<[u8; 4]>,
+  pub colors: Vec<[u8; 4]>,
 }
 
 impl Block {
-    pub fn new(stream: &mut dyn Read) -> Self {
-        let length = read_int(stream);
-        let buffer = read(stream, length);
-        let memory = Memory {
-            buffer: buffer.clone(),
-        };
-        let decoder = Decoder::new(memory);
-        let mut result = vec![[0; 4]; BLOCK_SIZE_CUBED];
-        let mut colors = vec![[0; 4]; BLOCK_SIZE_CUBED];
+  pub fn new(bytes: &mut Vec<u8>) -> Self {
+    let length = read_int(bytes);
+    let buffer = read(bytes, length);
+    let memory = Memory { buffer };
+    let decoder = Decoder::new(memory);
+    let mut colors = vec![[0; 4]; BLOCK_SIZE_CUBED];
 
-        match decoder.read_info() {
-            Ok((info, mut reader)) => {
-                //            println!(
-                //                "PNG w: {} h: {} bit_depth: {:?} buffer_size: {} color_type: {:?}",
-                //                info.width,
-                //                info.height,
-                //                info.bit_depth,
-                //                info.buffer_size(),
-                //                info.color_type
-                //            );
+    match decoder.read_info() {
+      Ok((info, mut reader)) => {
+        let mut buf = vec![0; info.buffer_size()];
 
-                let mut buf = vec![0; info.buffer_size()];
+        reader.next_frame(&mut buf).unwrap();
 
-                reader.next_frame(&mut buf).unwrap();
-
-                let data = match info.color_type {
-                    ColorType::RGB => buf,
-                    ColorType::RGBA => buf,
-                    ColorType::Grayscale => {
-                        let mut vec = Vec::with_capacity(buf.len() * 3);
-                        for g in buf {
-                            vec.extend([g, g, g].iter().cloned())
-                        }
-                        vec
-                    }
-                    ColorType::GrayscaleAlpha => {
-                        let mut vec = Vec::with_capacity(buf.len() * 3);
-                        for ga in buf.chunks(2) {
-                            let g = ga[0];
-                            let a = ga[1];
-                            vec.extend([g, g, g, a].iter().cloned())
-                        }
-                        vec
-                    }
-                    _ => unreachable!("uncovered color type"),
-                };
-
-                // TODO: Need to think a better way to read the values directly instead of generating another intermediate array
-                let mut i = 0;
-                for color in data.chunks(4) {
-                    colors[i] = [color[0] << 0, color[1] << 0, color[2] << 0, color[3] << 0];
-                    i += 1;
-                }
-
-                for x in 0..BLOCK_SIZE {
-                    for y in 0..BLOCK_SIZE {
-                        for z in 0..BLOCK_SIZE {
-                            let index = Self::index(x, y, z);
-                            result[index] = colors[index];
-                        }
-                    }
-                }
+        let data = match info.color_type {
+          ColorType::RGB => {
+            let mut vec = Vec::with_capacity(buf.len() + buf.len() / 3);
+            for rgb in buf.chunks(3) {
+              vec.extend([rgb[0], rgb[1], rgb[2], 255].iter())
             }
-            Err(error) => println!("PNG error: {}", error),
+            vec
+          }
+          ColorType::RGBA => buf,
+          ColorType::Grayscale => {
+            let mut vec = Vec::with_capacity(buf.len() * 3);
+            for g in buf {
+              vec.extend([g, g, g, 255].iter())
+            }
+            vec
+          }
+          ColorType::GrayscaleAlpha => {
+            let mut vec = Vec::with_capacity(buf.len() * 3);
+            for ga in buf.chunks(2) {
+              let g = ga[0];
+              let a = ga[1];
+              vec.extend([g, g, g, a].iter())
+            }
+            vec
+          }
+          _ => unreachable!("uncovered color type"),
+        };
+
+        for (i, color) in data.chunks(4).enumerate() {
+          colors[i] = [color[0], color[1], color[2], color[3]];
         }
-
-        Block { colors: result }
+      }
+      Err(error) => println!("PNG error: {}", error),
     }
 
-    pub fn set_pixel(&mut self, x: usize, y: usize, z: usize, value: [u8; 4]) {
-        self.colors[Self::index(x, y, z)] = value;
-    }
+    Block { colors }
+  }
 
-    pub fn get_pixel(&self, x: usize, y: usize, z: usize) -> [u8; 4] {
-        self.colors[Self::index(x, y, z)]
-    }
+  pub fn set_pixel(&mut self, x: usize, y: usize, z: usize, value: [u8; 4]) {
+    self.colors[Self::index(x, y, z)] = value;
+  }
 
-    pub fn get_pixel_f32(&self, x: usize, y: usize, z: usize) -> [f32; 4] {
-        let color = self.get_pixel(x, y, z);
-        [
-            color[0] as f32 / 255.0,
-            color[1] as f32 / 255.0,
-            color[2] as f32 / 255.0,
-            color[3] as f32 / 255.0,
-        ]
-    }
+  pub fn get_pixel(&self, x: usize, y: usize, z: usize) -> [u8; 4] {
+    self.colors[Self::index(x, y, z)]
+  }
 
-    pub fn is_empty(&self, x: usize, y: usize, z: usize) -> bool {
-        self.get_pixel(x, y, z)[3] == 0
-    }
+  pub fn get_pixel_f32(&self, x: usize, y: usize, z: usize) -> [f32; 4] {
+    let color = self.get_pixel(x, y, z);
+    [
+      color[0] as f32 / 255.0,
+      color[1] as f32 / 255.0,
+      color[2] as f32 / 255.0,
+      color[3] as f32 / 255.0,
+    ]
+  }
 
-    fn index(x: usize, y: usize, z: usize) -> usize {
-        x + y * BLOCK_SIZE + z * BLOCK_SIZE_POT
-    }
+  pub fn is_empty(&self, x: usize, y: usize, z: usize) -> bool {
+    self.get_pixel(x, y, z)[3] == 0
+  }
+
+  fn index(x: usize, y: usize, z: usize) -> usize {
+    x + y * BLOCK_SIZE + z * BLOCK_SIZE_POT
+  }
 }
 
 impl fmt::Debug for Block {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Block Data ()")
-    }
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    write!(f, "Block Data ()")
+  }
 }
