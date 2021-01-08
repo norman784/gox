@@ -1,11 +1,6 @@
 # Gox (WIP)
 Library for loading [Goxel](http://guillaumechereau.github.io/goxel) .gox files.
 
-## TODO
-
-- Image is not really parsed
-- Check if the Gox is really an optimal solution
-
 ## License
 
 Licensed under either of
